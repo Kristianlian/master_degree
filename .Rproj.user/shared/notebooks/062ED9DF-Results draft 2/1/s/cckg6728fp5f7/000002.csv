@@ -1,0 +1,21 @@
+"0","### Training volume
+# Data handling
+tot.volh <- tot.vol %>%
+        mutate(time = if_else(timepoint %in% c(""T1"", ""T2""),
+                              ""baseline"",
+                              if_else(timepoint %in% c(""D3"", ""D4""),
+                                      ""session2"",
+                                      if_else(timepoint %in% c(""D5"", ""D6""),
+                                              ""session3"",
+                                              if_else(timepoint %in% c(""D7"", ""D8""),
+                                                      ""session4"",
+                                                      if_else(timepoint %in% c(""D9"", ""D10""),
+                                                              ""session5"",
+                                                              if_else(timepoint %in% c(""T3"", ""T4""),
+                                                                      ""session6"", timepoint))))))) %>%
+        mutate(time = factor(time, levels = c(""baseline"", ""session1"", ""session2"", ""session3"", ""session4"", ""session5"", ""session6"")),
+               supplement = factor(supplement, levels = c(""placebo"", ""glucose"")))
+"
+"2","Error in mutate(., time = if_else(timepoint %in% c(""T1"", ""T2""), ""baseline"",  : 
+  object 'tot.vol' not found
+"

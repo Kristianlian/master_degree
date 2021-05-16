@@ -1,0 +1,89 @@
+---
+title: "Untitled"
+author: "Kristian Lian"
+date: "5/13/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r cars}
+library(tidyverse);library(readxl);library(lme4);library(knitr);library(broom);library(emmeans);library(dplyr);library(cowplot);library(rmarkdown);library(readr);library(tinytex);library(tidyr);library(arsenal);library(dplyr);library(magrittr);library(dabestr)
+
+#laod dxa data and take out weight and subject to join with nutrition data
+fp.weight <-read_excel("data/ribose_dxa.xlsx") %>%
+        select(weight, subject)
+
+#nutrition data.
+# Data are presented as grams, supplemented protein (25g whey protein isolate = 42g protein) and glucose (90g) has been added by investigators,
+# and calculated into the total amount of ingested per day.
+
+# Load nutrition data. Sorts data and summarises into mean per supplement per day
+
+nut.weight <- read_excel("data/Ribose_nutrition_result.xlsx")%>%
+        select(timepoint, meal, subject, protein, fat, calories,
+               carbohydrates, group, sup_pro, sup_gluc, kcal_glu) %>%
+        #changed names to compare groups each paired days
+        mutate(timepoint = if_else(timepoint %in% c("T1","T2"), 
+                                   "Day 1",
+                                   if_else(timepoint %in% c("3", "4"),
+                                           "Day 2",
+                                           if_else(timepoint %in% c("5", "6"),
+                                                   "Day 3",
+                                                   if_else(timepoint %in% c("7", "8"),
+                                                           "Day 4",
+                                                           if_else(timepoint %in% c("9", "10"),
+                                                                   "Day 5",
+                                                                   if_else(timepoint %in% c("T3", "T4"),
+                                                                           "Day 6",
+                                                                           "na"))))))) %>%
+        group_by(timepoint, subject, group) %>%
+        #take in weight
+        inner_join(fp.weight) %>%
+        #summarise each variable to get total pr timepoint.
+        #Whey protein supplement is added to total protein ingestion
+        summarise(protein = sum(protein + sup_pro),
+                  fat = sum(fat),
+                  calories = sum(calories + kcal_glu),
+                  carbohydrates = sum(carbohydrates + sup_gluc),
+                  weight = sum(weight)) %>%
+        #summarise to get protein pr weight.
+        mutate(proprkg = (protein/weight)) %>%
+        pivot_wider(names_from = group,
+                    values_from = c(fat, protein, calories, carbohydrates, weight, proprkg))
+
+# Nutrition table with pro/weight. The table shows mean and SD of total intake 
+# of grams per supplement per time point.
+
+nuttable <- nut.weight %>%
+        pivot_longer(names_to = "variable",
+                     values_to = "values", col= fat_glucose:proprkg_placebo) %>%
+        group_by(timepoint, variable) %>%
+        summarise(m = mean(values, na.rm = TRUE),
+                  s= sd(values, na.rm = TRUE)) %>%
+        ungroup() %>%
+        separate(variable, into = c("variable", "group")) %>%
+        mutate(stat = paste0(round(m, 1), " (", round(s, 1), ")")) %>%
+        select(timepoint, variable, group, stat,) %>%
+        pivot_wider(names_from = variable,
+                    values_from = stat) %>%
+        select(timepoint, group, calories, carbohydrates, fat, protein,
+               proprkg) %>%
+        #changed names of group for simplicity 
+        mutate(group = if_else(group %in% c("glucose"),
+                               "G",
+                               if_else(group %in% c("placebo"),
+                                       "P",
+                                       ""))) 
+nuttable %>%
+        kable()
+
+#nuttable <- readRDS("./data/derivedData/nuttable2.RDS")
+```
+
+
+
