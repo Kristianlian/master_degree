@@ -30,6 +30,33 @@ table.dxa <- read_excel("data/ribose_dxa.xlsx") %>%
         select(sex, age, height, weight, leanmasskg, fatmasskg, ffkg) %>%
         print()
 
+#dxa table both genders
+dxa.tab <- table.dxa %>%
+        pivot_longer(names_to = "variable",
+                     values_to = "values", col= age:ffkg) %>%
+        select(variable, values) %>%
+        group_by(variable) %>%
+        summarise(m = mean(values, na.rm = TRUE),
+                  s= sd(values, na.rm = TRUE)) %>%
+        print()
+mutate(stat = paste0(round(m, 1), " (", round(s, 1), ")")) %>%
+        select(sex, variable, stat) %>%
+        pivot_wider(names_from = sex,
+                    values_from = stat) %>%
+        mutate(variable = if_else(variable %in% c("age"),
+                                  "Age",
+                                  if_else(variable %in% c("fatmasskg"),
+                                          "Fat mass",
+                                          if_else(variable %in% c("ffkg"),
+                                                  "Fat free mass",
+                                                  if_else(variable %in% c("height"),
+                                                          "Height",
+                                                          if_else(variable %in% c("leanmasskg"),
+                                                                  "Lean mass",
+                                                                  if_else(variable %in% c("weight"),
+                                                                          "Weight",
+                                                                          ""))))))) %>%
+        print()
 
 #dxa table pr. gender               
 dxa.table <- table.dxa %>%
@@ -39,6 +66,7 @@ dxa.table <- table.dxa %>%
         group_by(sex, variable) %>%
         summarise(m = mean(values, na.rm = TRUE),
                   s= sd(values, na.rm = TRUE)) %>%
+        print()
         mutate(stat = paste0(round(m, 1), " (", round(s, 1), ")")) %>%
         select(sex, variable, stat) %>%
         pivot_wider(names_from = sex,
